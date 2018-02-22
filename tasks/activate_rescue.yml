@@ -1,0 +1,63 @@
+---
+- name: Retrieve the first public key's fingerprint
+  local_action: uri
+  args:
+    url: https://robot-ws.your-server.de/key
+    method: GET
+    user: "{{ hetzner_username }}"
+    password: "{{ hetzner_passwd }}"
+    force_basic_auth: yes
+  register: key
+
+- set_fact:
+    authorized_key: "{{ key.json[0].key.fingerprint }}"
+
+- name: Check if the server's rescue mode is active
+  local_action: uri
+  args:
+    url: "https://robot-ws.your-server.de/boot/{{ ansible_host }}/rescue"
+    method: GET
+    user: "{{ hetzner_username }}"
+    password: "{{ hetzner_passwd }}"
+    force_basic_auth: yes
+  register: rescue
+
+- name: Activate the server's rescue system if it's not active
+  local_action: uri
+  args:
+    url: "https://robot-ws.your-server.de/boot/{{ ansible_host }}/rescue"
+    method: POST
+    user: "{{ hetzner_username }}"
+    password: "{{ hetzner_passwd }}"
+    force_basic_auth: yes
+    body: "os=linux&arch=64&authorized_key={{ authorized_key }}"
+    headers:
+      Content-Type: "application/x-www-form-urlencoded"
+  when: not rescue.json.rescue.active|bool
+  register: activated
+
+# FIXME: A condition is needed here to avoid rebooting the server again and
+# again.
+- name: Reboot the server
+  local_action: uri
+  args:
+    url: "https://robot-ws.your-server.de/reset/{{ ansible_host }}"
+    method: POST
+    user: "{{ hetzner_username }}"
+    password: "{{ hetzner_passwd }}"
+    force_basic_auth: yes
+    body: "type=hw"
+    headers:
+      Content-Type: "application/x-www-form-urlencoded"
+
+- name: Remove the host from the known_hosts file
+  local_action: known_hosts
+  args:
+    name: "{{ ansible_host }}"
+    state: absent
+  ignore_errors: yes
+
+- name: Wait until the server is reachable
+  wait_for_connection:
+    delay: 30
+    timeout: 300
