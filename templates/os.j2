@@ -1,0 +1,21 @@
+DRIVE1 /dev/sda
+DRIVE2 /dev/sdb
+
+{% if enable_swraid|bool %}
+SWRAID 1
+{% else %}
+SWRAID 0
+{% endif %}
+SWRAIDLEVEL {{ swraid_level }}
+
+BOOTLOADER grub
+
+HOSTNAME {{ inventory_hostname }}
+
+{% if partitions is defined %}
+{% for partition in partitions %}
+{{ partition }}
+{% endfor %}
+{% endif %}
+
+IMAGE /root/.oldroot/nfs/images/{{ image }}
