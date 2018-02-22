@@ -1,0 +1,37 @@
+---
+- name: Find out names of the devices
+  command: lsblk -So NAME -n
+  register: result
+  changed_when: false
+
+- set_fact:
+    devices: "{{ result.stdout.split() | list }}"
+
+- name: Write the OS installation file
+  template:
+    src: templates/os.j2
+    dest: $HOME/os
+
+- name: Wipe the disks
+  shell: "/sbin/blkdiscard /dev/{{ item }}"
+  with_items: "{{ devices }}"
+
+- name: Install OS
+  shell: /root/.oldroot/nfs/install/installimage -a -c $HOME/os
+
+- name: Reboot the server
+  shell: sleep 2 && shutdown -r now "Reboot the server"
+  async: 1
+  poll: 0
+
+- name: Remove the host from the known_hosts file
+  local_action: known_hosts
+  args:
+    name: "{{ ansible_host }}"
+    state: absent
+  ignore_errors: yes
+
+- name: Wait until the server is reachable
+  wait_for_connection:
+    delay: 30
+    timeout: 300

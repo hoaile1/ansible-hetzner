@@ -2,10 +2,14 @@
 # For the Hetzner webservice, a separate user can be created. You
 # can find this option in the robot webinterface under "Settings".
 
-hetzner_webservice_username: ""
-hetzner_webservice_password: ""
+hetzner_username: ""
+hetzner_passwd: ""
 
 hetzner_authorized_keys: []
 hetzner_private_key_file: ""
 hetzner_profile_file: files/autosetup
 hetzner_root_device: /dev/md2
+
+enable_swraid: yes
+swraid_level: 1
+image: Ubuntu-1604-xenial-64-minimal-no-hwe.tar.gz
