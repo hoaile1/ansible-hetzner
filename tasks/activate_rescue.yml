@@ -58,6 +58,10 @@
   ignore_errors: yes
 
 - name: Wait until the server is reachable
-  wait_for_connection:
+  local_action: wait_for
+  args:
+    host: "{{ ansible_host }}"
+    port: 22
     delay: 30
     timeout: 300
+    state: started
